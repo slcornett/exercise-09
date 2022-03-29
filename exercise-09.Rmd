@@ -1,0 +1,248 @@
+---
+title: "exercise-09"
+author: "SLCornett"
+date: "3/29/2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+**Practice_Simple_Linear_Regression**
+```{r}
+#library(mosaic)
+#library(lmodel2)
+library(tidyverse)
+library(manipulate) 
+library(broom)
+library(patchwork)
+library(skimr)
+library(infer)
+library(dplyr)
+library(ggplot2)
+```
+
+
+1. Using the {tidyverse} read_csv() function, load the “Street_et_al_2017.csv” dataset from this URL as a “tibble” named d.
+```{r}
+f <- "https://raw.githubusercontent.com/difiore/ada-2022-datasets/main/Street_et_al_2017.csv"
+d <- read_csv(f, col_names = TRUE)
+```
+
+
+2. Do a quick exploratory data analysis where you generate the five-number summary (median, minimum and maximum and 1st and 3rd quartile values), plus mean and standard deviation, for each quantitative variable
+```{r}
+skim(d)
+```
+
+
+> note to self: $\beta$ = beta letter
+
+
+3. Plot brain size (**ECV**) as a function of social group size (**Group_size**), longevity (**Longevity**), juvenile period length (**Weaning**), and reproductive lifespan(**Repro_lifespan**)
+```{r}
+df <- d %>% # pinned and exclamation mark before is "not"
+  filter(!is.na(ECV) & !is.na(Group_size)) # filters out all the rows that have NA in them and assigns to a new data set, df (aka d_mod)
+
+# alternative method: plot(x = , y = )
+
+# ECV by group size
+gs <- ggplot(data=df, aes(x = ECV, y = Group_size))
+gs <- gs + geom_point(na.rm=TRUE) # make it a scatterplot
+gs
+
+#ECV by longevity
+lg <- ggplot(data=df, aes(x = ECV, y = Longevity))
+lg <- lg + geom_point(na.rm=TRUE)
+lg
+
+#ECV by Weaning
+wean <- ggplot(data=df, aes(x = ECV, y = Weaning))
+wean <- wean + geom_point(na.rm = TRUE)
+wean
+
+#ECV by Reproductive lifespan
+rl <- ggplot(data=df, aes(x = ECV, y = Repro_lifespan))
+rl <- rl + geom_point(na.rm = TRUE)
+rl
+
+```
+
+
+4. Derive by hand the ordinary least squares regression coefficients ($\beta1$) and ($\beta0$) for ECV as a function of social group size. [HINT: You will need to remove rows from your dataset where one of these variables is missing.]
+```{r}
+#filtered df in the block above
+# β1 by hand
+b1 <- cor(df$ECV, df$Group_size) * sd(df$ECV)/sd(df$Group_size)
+b1 # this checks out
+
+# beta0 by hand
+b0 <- mean(df$ECV) - b1*mean(df$Group_size)
+b0 # this checks out
+
+#residuals = how far each observation deviates from the predicted line
+residuals <-  df$ECV - (b0 - b1 * df$Group_size) # or residuals <- model$residuals
+
+num <- sum(residuals^2)/(length(residuals)-2) 
+den <- sum((df$Group_size) - mean(df$Group_size))^2
+
+
+#t-test code from class
+#t_b1 <- b1/SE_b1
+#t_b0 <- b0/SE_b0
+```
+
+
+5. confirm that you get the same results using the 'lm()' fxn.
+```{r}
+model <- lm(formula = ECV ~ Group_size, data = d)
+model
+
+#summary of model
+summary(model) #matches lm function output
+#linear model fxn smart so don't need to filter out the NAs when running this, ie can use d instead of df
+
+model.summary <- tidy(model)
+model.summary
+
+#calculating p value of model summary
+#m.summary$calc.statistic <- (m.summary$estimate-0)/m.summary$std.error 
+# model.summary$calc.p.value <- 2 * pt(model.summary$calc.statistic, df = nrow(df)-2, lower.tail = FALSE)
+```
+
+
+6. Repeat the above analysis for different groups of primates (catarrhines, platyrrhines, strepsirhines (big radiation, including lemurs)) separately.These are stored in the variable *Taxonomic_group*.
+```{r}
+# Selecting by taxonomic group
+#Catarrhines
+catarrhines <- df %>% filter(Taxonomic_group == "Catarrhini")
+cata_b1 <- cor(catarrhines$ECV, catarrhines$Group_size) * (sd(catarrhines$ECV)/sd(catarrhines$Group_size))
+cata_b1
+
+cata_b0 <- mean(catarrhines$ECV) - cata_b1 * mean(catarrhines$Group_size)
+cata_b0
+
+#platyrrhines
+platyrrhines <- df %>% filter(Taxonomic_group == "Platyrrhini")
+platy_b1 <- cor(platyrrhines$ECV, platyrrhines$Group_size) * (sd(platyrrhines$ECV)/sd(platyrrhines$Group_size))
+platy_b1
+
+platy_b0 <- mean(platyrrhines$ECV) - platy_b1 * mean(platyrrhines$Group_size)
+platy_b0
+
+#strepsirhines
+strepsirhines <- df %>% filter (Taxonomic_group == "Strepsirhini")
+
+strep_b1 <- cor(strepsirhines$ECV, strepsirhines$Group_size) * (sd(strepsirhines$ECV)/sd(strepsirhines$Group_size))
+strep_b1
+  
+strep_b0 <- mean(strepsirhines$ECV) - strep_b1 * mean(strepsirhines$Group_size)
+strep_b0
+```
+
+
+7. Do your regression coefficients differ among the taxonomic groups? How might you determine this?
+```{r}
+#cata lm check
+cata_m <- lm(formula = ECV ~ Group_size, data = catarrhines)
+summary(cata_m)
+
+#platy lm check
+platy_m <- lm(formula = ECV ~ Group_size, data = platyrrhines)
+summary(platy_m)
+
+#strep check
+strep_m <- lm(formula = ECV ~ Group_size, data = strepsirhines)
+summary(strep_m)
+```
+
+
+8. For your first regression of *ECV on social group size*, calculate the *standard error for the slope coefficient*, the *95% CI*, and the p value associated with this coefficient by hand. Also extract this same information from the results of running the lm() function.
+ (Module 18: https://difiore.github.io/ada-2022/18-module.html#cis-for-coefficients-by-bootstrapping)
+```{r}
+#standard error of the slope coefficient
+SE_b1 <- sqrt(num/den)
+SE_b1
+
+SE_b0 <- SE_b1 * sqrt(sum(df$Group_size^2)/length(df$Group_size))
+SE_b0
+
+#95% CI of model (initial summary stats)
+alpha <- 0.05
+lower <- model.summary$estimate - qt(1 - alpha / 2, df = nrow(df) - 2) * model.summary$std.error #df dataframe without the NAs
+upper <- model.summary$estimate + qt(1 - alpha / 2, df = nrow(df) - 2) * model.summary$std.error
+
+CI <- cbind(lower, upper) # making CI output a table
+rownames(CI) <- c("(Intercept)", "Group_size")
+colnames(CI) <- c(paste0(as.character(alpha/2 * 100), " %"),paste0(as.character((1-alpha/2) * 100), " %"))
+CI
+#calculate the p-value
+model.summary$calc.statistic <- (model.summary$estimate-0)/model.summary$std.error 
+model.summary$calc.p.value <- 2 * pt(model.summary$calc.statistic, df = nrow(df)-2, lower.tail = FALSE)
+model.summary
+```
+
+
+9. Then, use a permutation approach with 1000 permutations to generate a null sampling distribution for the slope coefficient. What is it that you need to permute? What is the p value associated with your original slope coefficient?
+```{r}
+# first define alpha, CI boundaries, and critical values
+alpha <- 0.05
+confidence_level <- 1 - alpha
+p_lower <- alpha / 2
+p_upper <- 1 - (alpha / 2)
+degrees_of_freedom <- nrow(df) - 2
+critical_value <- qt(p_upper, df = degrees_of_freedom)
+
+# original slope
+original.slope <- lm(data = df, ECV ~ Group_size) %>%
+  # tidy the model and add the CI based on the t distribution
+  tidy(conf.int = TRUE, conf.level = confidence_level) %>%
+  # or manually calculate the CI based on the t distribution
+  mutate(
+    lower = estimate - std.error * critical_value,
+    upper = estimate + std.error * critical_value
+  ) %>%
+  filter(term=="Group_size")
+original.slope # show model results for slope of weight
+
+#permuted slope - DO LOOP can do any loop we want, do(reps), for loop
+permuted.slope <- df %>% 
+  specify(ECV ~ Group_size) %>% # specify model
+  hypothesize(null = "independence") %>% # use a null hypothesis of independence
+  generate(reps = 1000, type = "permute") %>% # generate permutation replicates
+  calculate(stat = "slope")# calculate the slope statistic
+
+
+```
+
+10. Use bootstrapping to generate a 95% CI for your estimate of the slope coefficient using both the percentile method and the theory-based method (i.e., based on the standard deviation of the bootstrapped sampling distribution). What is the p value associated with your observed slope coefficient based on each of these methods?
+```{r}
+boot.slope <- df %>%
+  # specify model
+  specify(ECV ~ Group_size) %>%
+  # generate bootstrap replicates
+  generate(reps = 1000, type = "bootstrap") %>%
+  # calculate the slope statistic
+  calculate(stat = "slope")
+
+print(boot.slope) # slopes from first few bootstrap replicates
+
+# create confidence intervals for regression coefficients
+
+boot.slope.summary <- boot.slope %>%
+  # summarize the mean, t distribution based CI, and quantile-based CI
+  summarize(
+    # mean of stat
+    estimate = mean(stat),
+    # std error of stat
+    std.error = sd(stat),
+    # calculate the CI based on the SE and t distribution
+    lower = estimate - std.error * critical_value,
+    upper = estimate + std.error * critical_value,
+    # calculate the CI based on the quantile (percentile)  method
+    boot.lower = quantile(stat, p_lower),
+    boot.upper = quantile(stat, p_upper)
+  )
+
+# show summary of bootstrap sampling distribution
+boot.slope.summary
+```
+
