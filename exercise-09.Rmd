@@ -103,7 +103,7 @@ summary(model) #matches lm function output
 model.summary <- tidy(model)
 model.summary
 
-#calculating p value of model summary
+#calculating p value of model summary, doing this below
 #m.summary$calc.statistic <- (m.summary$estimate-0)/m.summary$std.error 
 # model.summary$calc.p.value <- 2 * pt(model.summary$calc.statistic, df = nrow(df)-2, lower.tail = FALSE)
 ```

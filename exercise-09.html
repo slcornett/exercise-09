@@ -556,7 +556,7 @@ model.summary</code></pre>
 ##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
 ## 1 (Intercept)    30.4      6.80       4.47 1.56e- 5
 ## 2 Group_size      2.46     0.351      7.02 7.26e-11</code></pre>
-<pre class="r"><code>#calculating p value of model summary
+<pre class="r"><code>#calculating p value of model summary, doing this below
 #m.summary$calc.statistic &lt;- (m.summary$estimate-0)/m.summary$std.error 
 # model.summary$calc.p.value &lt;- 2 * pt(model.summary$calc.statistic, df = nrow(df)-2, lower.tail = FALSE)</code></pre>
 <ol start="6" style="list-style-type: decimal">
@@ -734,16 +734,16 @@ print(boot.slope) # slopes from first few bootstrap replicates</code></pre>
 ## # A tibble: 1,000 × 2
 ##    replicate  stat
 ##        &lt;int&gt; &lt;dbl&gt;
-##  1         1  2.31
-##  2         2  2.08
-##  3         3  1.98
-##  4         4  1.87
-##  5         5  2.44
-##  6         6  1.49
-##  7         7  2.84
-##  8         8  2.25
-##  9         9  2.71
-## 10        10  3.08
+##  1         1  2.45
+##  2         2  2.87
+##  3         3  2.38
+##  4         4  2.69
+##  5         5  2.23
+##  6         6  2.86
+##  7         7  1.85
+##  8         8  2.47
+##  9         9  2.23
+## 10        10  2.65
 ## # … with 990 more rows</code></pre>
 <pre class="r"><code># create confidence intervals for regression coefficients
 
@@ -767,7 +767,7 @@ boot.slope.summary</code></pre>
 <pre><code>## # A tibble: 1 × 6
 ##   estimate std.error lower upper boot.lower boot.upper
 ##      &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
-## 1     2.44     0.470  1.51  3.37       1.49       3.32</code></pre>
+## 1     2.43     0.455  1.53  3.33       1.57       3.29</code></pre>
 
 
 
