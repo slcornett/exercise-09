@@ -34,7 +34,7 @@ skim(d)
 ```
 
 
-> note to self: $\beta$ = beta letter
+[note to self: $\beta$ = beta letter]
 
 
 3. Plot brain size (**ECV**) as a function of social group size (**Group_size**), longevity (**Longevity**), juvenile period length (**Weaning**), and reproductive lifespan(**Repro_lifespan**)
@@ -42,27 +42,24 @@ skim(d)
 # alternative method: plot(x = , y = )
 
 # ECV by group size
-gs <- ggplot(data = d, aes(x = ECV, y = Group_size))
+gs <- ggplot(data = d, aes(x = ECV, y = Group_size)) 
 gs <- gs + geom_point(na.rm=TRUE) # make it a scatterplot
-gs
 
 #ECV by longevity
 lg <- ggplot(data = d, aes(x = ECV, y = Longevity))
 lg <- lg + geom_point(na.rm=TRUE)
-lg
 
 #ECV by Weaning
 wean <- ggplot(data = d, aes(x = ECV, y = Weaning))
 wean <- wean + geom_point(na.rm = TRUE)
-wean
 
 #ECV by Reproductive lifespan
 rl <- ggplot(data = d, aes(x = ECV, y = Repro_lifespan))
 rl <- rl + geom_point(na.rm = TRUE)
-rl
 
 gs+lg+wean+rl
 ```
+
 
 
 4. Derive by hand the ordinary least squares regression coefficients ($\beta1$) and ($\beta0$) for ECV as a function of social group size. 
@@ -101,7 +98,7 @@ residuals <-  df$ECV - (b0 + b1 * df$Group_size) # or residuals <- model$residua
 
 #num <- sum(residuals^2)/(length(residuals)-2) #only squaring Group size, not the whole things
 num <- sum(residuals^2)
-den <- sum((df$Group_size - mean(df$Group_size))^2) * (n - 2)  #WHY NOT WORKING. error message: Error in n - 2 : non-numeric argument to binary operator
+den <- sum((df$Group_size - mean(df$Group_size))^2) * (nrow(df) - 2)  #need to define n as the number of rows, either as a variable or as nrow(df)
 ```
 
 
