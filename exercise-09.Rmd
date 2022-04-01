@@ -155,7 +155,7 @@ The regression coefficients differ slightly among the 3 groups; I determined thi
 8. For your first regression of *ECV on social group size* (above), calculate the *standard error for the slope coefficient*, the *95% CI*, and the *p value* associated with this coefficient by hand. Also extract this same information from the results of running the lm() function.
 ```{r}
 #standard error of the slope coefficient
-SE_b1 <- sqrt(num/den) # den wrong bc not working above
+SE_b1 <- sqrt(num/den) # fixed, now working!
 SE_b1
 
 # SE_b0 <- SE_b1 * sqrt(sum(df$Group_size^2)/length(df$Group_size)) # do not need
