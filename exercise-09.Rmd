@@ -87,12 +87,12 @@ b0 # this checks out
 
 5. confirm that you get the same results using the 'lm()' fxn.
 ```{r}
-model <- lm(formula = ECV ~ Group_size, data = d)
+model <- lm(formula = ECV ~ Group_size, data = d) #linear model fxn smart so don't need to filter out the NAs when running this, ie can use d instead of df
 model
 
-#summary of model
+#summary of model (could also use glace() from {infer} to get other info)
 summary(model) #matches lm function output
-#linear model fxn smart so don't need to filter out the NAs when running this, ie can use d instead of df
+
 model_sum <- tidy(model)
 model_sum
 
@@ -151,7 +151,7 @@ strep_m <- lm(formula = ECV ~ Group_size, data = strepsirhines)
 summary(strep_m)
 ```
 7. Do your regression coefficients differ among the taxonomic groups? How might you determine this? 
-The regression coefficients differ slightly among the 3 groups; I determined this by comparing each groups linear model summaries. This can also be determined just by comparing the regression coefficients. 
+*A:* The regression coefficients differ slightly among the 3 groups; I determined this by comparing each groups linear model summaries. This can also be determined just by comparing the regression coefficients ($\beta1$ and $\beta0$). 
 
 
 
@@ -174,17 +174,21 @@ rownames(CI) <- c("(Intercept)", "Group_size")
 colnames(CI) <- c(paste0(as.character(alpha/2 * 100), " %"),paste0(as.character((1-alpha/2) * 100), " %"))
 CI
 
-#calculate the p-value
+#calculate the p-value for the model
 model_sum$calc.statistic <- (model_sum$estimate-0)/model_sum$std.error 
 model_sum$calc.p.value <- 2 * pt(model_sum$calc.statistic, df = nrow(df)-2, lower.tail = FALSE)
 model_sum
 
-# extract using lm 
-model_sum # possibly wrong?
+# extract the same information using lm , same as above
+
 ```
 
 
-9. Then, use a permutation approach with 1000 permutations to generate a null sampling distribution for the slope coefficient. What is it that you need to permute? What is the p value associated with your original slope coefficient? You can use either the percentile method (i.e., using quantiles from actual permutation-based null sampling distribution) or a theory-based method (i.e., using the standard deviation of the permutation-based null sampling distribution as the estimate of the standard error), or both, to calculate this p value.
+
+9. Then, use a permutation approach with 1000 permutations to generate a null sampling distribution for the slope coefficient. 
+What is it that you need to permute? A: the null distribution. What is the p value associated with your original slope coefficient? 
+> HINT: You can use either the percentile method (i.e., using quantiles from actual permutation-based null sampling distribution) or a theory-based method (i.e., using the standard deviation of the permutation-based null sampling distribution as the estimate of the standard error), or both, to calculate this p value. 
+
 ```{r}
 # first define alpha, CI boundaries, and critical values
 alpha <- 0.05
@@ -196,10 +200,10 @@ critical_value <- qt(p_upper, df = degrees_of_freedom)
 
 # original slope = og slope
 og_slope <- lm(data = df, ECV ~ Group_size) %>% 
-  tidy(conf.int = TRUE, conf.level = confidence_level) %>%# tidy the model to make it a table
+  tidy(conf.int = TRUE, conf.level = confidence_level) %>% # tidy the model to make it a table
   mutate( # add the CI based on the t distribution to the new table
-    lower = estimate - std.error * critical_value,
-    upper = estimate + std.error * critical_value
+    lower = estimate - std.error * critical_value, #lower bounds
+    upper = estimate + std.error * critical_value #upper bounds
   ) %>%
   filter(term == "Group_size")
 og_slope # show model results for slope of weight
@@ -207,18 +211,19 @@ og_slope # show model results for slope of weight
 # og slope p value (adds it to the tibble above)
 og_slope$calc.statistic <- (og_slope$estimate-0)/og_slope$std.error 
 og_slope$calc.p.value <- 2 * pt(og_slope$calc.statistic, df = nrow(df)-2, lower.tail = FALSE)
-og_slope # returns calculated p-value
+og_slope # returns calculated p-value added tot the tibble made above @ tidy step
 
+#a null distribution for our slope estimates
 # permuted slope (perm_slope) - to compare to og_slope
 perm_slope <- df %>% 
   specify(ECV ~ Group_size) %>% # specify model (same as above for info included)
   hypothesize(null = "independence") %>% # use a null hypothesis of independence
   generate(reps = 1000, type = "permute") %>% # generate permutation replicates, 1000 permutations
   calculate(stat = "slope")# calculate the slope statistic
-print(perm_slope)
+perm_slope
 
-# p-value for perm_slope vs. og_slope
-p_value <- perm_slope %>% 
+# p-value for perm_slope vs. og_slope?
+perm_p_value <- perm_slope %>% 
   mutate(abs_stat = abs(stat)) %>% # add a column of the absolute value of the slope
   summarize( # calculate a summary statistic
     # calculate proportion of cases where the absolute value
@@ -226,7 +231,7 @@ p_value <- perm_slope %>%
     # absolute value of the observed slope
     estimate = mean(abs_stat >= abs(pull(og_slope, estimate)))
   )
-p_value
+perm_p_value # = 0
 
 # create confidence intervals for perm_slope
 perm_slope_sum <- perm_slope %>% # summarize the mean, t distribution based CI, and quantile-based CI
@@ -240,8 +245,8 @@ perm_slope_sum <- perm_slope %>% # summarize the mean, t distribution based CI, 
   )
 
 # show summary of permuted sampling distribution
-perm_slope_sum
-summary(perm_slope_sum)
+perm_slope_sum # short version
+summary(perm_slope_sum) # info-dump version
 ```
 
 
@@ -261,17 +266,34 @@ boot_CI_1 <- boot_slope %>% # summarize the mean
     lower = estimate - se * critical_value, # calculate the CI based on the SE and t distribution
     upper = estimate + se * critical_value, 
   )
-summary(boot_CI_1) # show summary of bootstrap sampling distribution
+# summary(boot_CI_1) # show summary of bootstrap sampling distribution, all the details
+boot_CI_1 # less details
 
-# create confidence intervals for regression coefficients: percentile method
+# confidence intervals for regression coefficients: percentile method
 boot_CI_2 <- boot_slope %>% # summarize the mean
   summarize( #quantile-based CI
     estimate = mean(stat), # mean of stat
     se = sd(stat),    # standard error of stat
-    boot_lower = quantile(stat, p_lower), # calculate the CI based on the quantile (percentile)  method
-    boot_upper = quantile(stat, p_upper) 
+    lower = quantile(stat, p_lower), # calculate the CI based on the quantile (percentile)  method
+    upper = quantile(stat, p_upper) 
   )
-summary(boot_CI_2) # show summary of bootstrap sampling distribution
+# summary(boot_CI_2) # show summary of bootstrap sampling distribution all the details
+boot_CI_2 #less details
 
+# what is the p value associated with your observed slope coefficient based on each of these method?
+boot_p_value <- boot_slope %>% 
+  mutate(abs_stat = abs(stat)) %>% # add a column of the absolute value of the slope
+  summarize( # calculate a summary statistic
+    # calculate proportion of cases where the absolute value
+    # of the permuted slope is greater than or equal to the 
+    # absolute value of the observed slope
+    estimate = mean(abs_stat >= abs(pull(og_slope, estimate)))
+  )
+boot_p_value
+
+#directly getting p_value, not sure why it is different from the boot_p_value
+boot.p.value <- boot_slope %>%
+  get_p_value(obs_stat = og_slope$estimate, direction="two_sided")
+boot.p.value
 ```
 11. Do these CIs suggest that your slope coefficient is different from zero? Yes. but they look different from the % CIs from the model summary. 
