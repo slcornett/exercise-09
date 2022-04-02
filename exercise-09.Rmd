@@ -4,8 +4,8 @@ author: "SLCornett"
 date: "3/29/2022"
 output: 
   html_document: 
-    theme: yeti
-    highlight: pygments
+    theme: readable
+    highlight: textmate
 editor_options: 
   chunk_output_type: console
 ---
