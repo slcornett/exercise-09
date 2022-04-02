@@ -13,7 +13,6 @@ editor_options:
 ```{r}
 #library(mosaic)
 library(tidyverse)
-library(manipulate) 
 library(broom)
 library(patchwork)
 library(skimr)
@@ -79,9 +78,6 @@ b1 # this checks out
 b0 <- mean(df$ECV) - b1*mean(df$Group_size)
 b0 # this checks out
 
-#t-test code from class
-#t_b1 <- b1/SE_b1
-#t_b0 <- b0/SE_b0
 ```
 
 
@@ -107,7 +103,7 @@ den <- sum((df$Group_size - mean(df$Group_size))^2) * (nrow(df) - 2)  #need to d
 
 6. Repeat the above analysis for different groups of primates (catarrhines, platyrrhines, strepsirhines (big radiation, including lemurs)) separately.These are stored in the variable *Taxonomic_group*.
 ```{r}
-# Selecting by taxonomic group. i am vey proud of this. 
+# Selecting by taxonomic group. i am very proud of this. 
 #Catarrhines
 # filtering for just these dudes
 catarrhines <- df %>% filter(Taxonomic_group == "Catarrhini") 
@@ -155,14 +151,19 @@ summary(strep_m)
 
 
 
-8. For your first regression of *ECV on social group size* (above), calculate the *standard error for the slope coefficient*, the *95% CI*, and the *p value* associated with this coefficient by hand. Also extract this same information from the results of running the lm() function.
+8. For your first regression of *ECV on social group size* (above), [A] calculate the *standard error for the slope coefficient*, [B] the *95% CI*, and [C] the *p value* associated with this coefficient by hand. Also extract this same information from the results of running the lm() function.
 ```{r}
-#standard error of the slope coefficient
+# [A] standard error of the slope coefficient
 SE_b1 <- sqrt(num/den) # fixed, now working!
 SE_b1
 
+#not requested but calculated
 # SE_b0 <- SE_b1 * sqrt(sum(df$Group_size^2)/length(df$Group_size)) # do not need
 # SE_b0
+
+#t-test code from class
+#t_b1 <- b1/SE_b1
+#t_b0 <- b0/SE_b0
 
 #95% CI of model (initial summary stats)
 alpha <- 0.05
@@ -174,13 +175,13 @@ rownames(CI) <- c("(Intercept)", "Group_size")
 colnames(CI) <- c(paste0(as.character(alpha/2 * 100), " %"),paste0(as.character((1-alpha/2) * 100), " %"))
 CI
 
-#calculate the p-value for the model
+# [C] calculate the p-value for the model
 model_sum$calc.statistic <- (model_sum$estimate-0)/model_sum$std.error 
 model_sum$calc.p.value <- 2 * pt(model_sum$calc.statistic, df = nrow(df)-2, lower.tail = FALSE)
 model_sum
 
 # extract the same information using lm , same as above
-
+model # calculated above with residuals
 ```
 
 
@@ -199,7 +200,7 @@ degrees_of_freedom <- nrow(df) - 2
 critical_value <- qt(p_upper, df = degrees_of_freedom)
 
 # original slope = og slope
-og_slope <- lm(data = df, ECV ~ Group_size) %>% 
+og_slope <- lm(data = df, ECV ~ Group_size) %>% # create linear model
   tidy(conf.int = TRUE, conf.level = confidence_level) %>% # tidy the model to make it a table
   mutate( # add the CI based on the t distribution to the new table
     lower = estimate - std.error * critical_value, #lower bounds
@@ -222,7 +223,7 @@ perm_slope <- df %>%
   calculate(stat = "slope")# calculate the slope statistic
 perm_slope
 
-# p-value for perm_slope vs. og_slope?
+# p-value for perm_slope vs. og_slope? # could use get get_p_value
 perm_p_value <- perm_slope %>% 
   mutate(abs_stat = abs(stat)) %>% # add a column of the absolute value of the slope
   summarize( # calculate a summary statistic
@@ -250,7 +251,7 @@ summary(perm_slope_sum) # info-dump version
 ```
 
 
-10. Use bootstrapping to generate a 95% CI for your estimate of the slope coefficient using both the percentile method and the theory-based method (i.e., based on the standard deviation of the bootstrapped sampling distribution). What is the p value associated with your observed slope coefficient based on each of these methods?  
+10. Use bootstrapping to generate a 95% CI for your estimate of the slope coefficient using both the *percentile method* and the *theory-based method* (i.e., based on the standard deviation of the bootstrapped sampling distribution). What is the p value associated with your observed slope coefficient based on each of these methods?  
 ```{r}
 boot_slope <- df %>%
   specify(ECV ~ Group_size) %>% # specify model, same as permuted
@@ -291,9 +292,25 @@ boot_p_value <- boot_slope %>%
   )
 boot_p_value
 
-#directly getting p_value, not sure why it is different from the boot_p_value
-boot.p.value <- boot_slope %>%
-  get_p_value(obs_stat = og_slope$estimate, direction="two_sided")
-boot.p.value
+#directly getting p_value, two-sided gives 0.92, greater gives same as above. Jyhreh found this way works too
+# p_value_boot <- boot_slope %>% 
+  # get_p_value(obs_stat = og_slope$estimate, direction ="greater")
+# p_value_boot
 ```
-11. Do these CIs suggest that your slope coefficient is different from zero? Yes. but they look different from the % CIs from the model summary. 
+
+
+
+11. Do these CIs suggest that your slope coefficient is different from zero? Yes, they look roughly the same as the original CI calculated by hand and in *model*
+```{r}
+# original calculated by hand
+CI
+
+#theory based
+boot_CI_1
+
+#percentile based
+boot_CI_2
+
+```
+
+the end... for now
